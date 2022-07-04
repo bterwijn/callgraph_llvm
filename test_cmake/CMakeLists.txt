@@ -23,7 +23,7 @@ target_link_libraries(main PUBLIC lib)
 target_include_directories(main PUBLIC
   "${PROJECT_SOURCE_DIR}/lib"
   )
-   
+
 # add the llvm target
 get_target_property(main_includes main INCLUDE_DIRECTORIES)
 add_custom_target(main.llvm ALL

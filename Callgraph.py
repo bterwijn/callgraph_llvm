@@ -1,44 +1,9 @@
-import sys
 
-def main():
-    output="default.dot"
-    label="default-label"
-    filenames=[]
-    i=1
-    if len(sys.argv)<2:
-        help()
-    while i<len(sys.argv):
-        if sys.argv[i]=="-h":
-            help()
-        elif sys.argv[i]=="-o":
-            output=sys.argv[i+1]
-            i+=1
-        elif sys.argv[i]=="-l":
-            label=sys.argv[i+1]
-            i+=1
-        else:
-            filenames.append(sys.argv[i])
-        i+=1
-    merge_files(filenames,output,label)
+def fix_label(label):
+    result=label.replace('<','\<')
+    return result.replace('>','\>')
 
-def help():
-    print("usage: python merge_dots.py <options> <filenames>")
-    print("  options: -h                     print help")
-    print("           -o <output-file>       set output file")
-    print("           -l <label>             set label")
-    
-def merge_files(filenames,output,label):
-    first=None
-    for filename in filenames:
-        dot_file = Dot_File(filename)
-        if first is None:
-            first=dot_file
-        else:
-            first.merge(dot_file)
-    if not first is None:
-        first.write(output,label)
-        
-class Dot_File:
+class Callgraph:
 
     def __init__(self,filename):
         self.nodes={}
@@ -64,18 +29,20 @@ class Dot_File:
                         line=line[0:-1]
                         split = line.split()
                         if len(split)==2:
-                            self.nodes[split[1]]=split[0]
+                            id=split[0]
+                            label=fix_label(split[1])
+                            self.nodes[label]=id
                         elif len(split)==3:
                             self.edges.append((split[0],split[1],split[2]))
                 line_nr+=1
 
     def merge(self,other):
         translate={}
-        for name,id in other.nodes.items():
-            if name in self.nodes:
-                translate[id]=self.nodes[name]
+        for label,id in other.nodes.items():
+            if label in self.nodes:
+                translate[id]=self.nodes[label]
             else:
-                self.nodes[name]=id
+                self.nodes[label]=id
         for i0,i1,i2 in other.edges:
             if i0 in translate:
                 i0=translate[i0]
@@ -102,5 +69,3 @@ class Dot_File:
                 
     def write_footer(self,file):
         file.write("}\n")
-
-main()
