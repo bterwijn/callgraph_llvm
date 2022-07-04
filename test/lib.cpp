@@ -1,13 +1,13 @@
 #include "lib.h"
 
-void X::my_method()
+void My_Class::my_method()
 { a(66); }
 
 void a(int i)
 {
 }
 
-void b(X x)
+void b(My_Class m)
 {
-    x.my_method();
+    m.my_method();
 }

@@ -5,7 +5,7 @@
 void test()
 {
     a(5);
-    b(X{});
+    b(My_Class());
 }
 
 int main()
