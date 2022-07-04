@@ -30,17 +30,17 @@ class Callgraph:
                 elif line_nr==1:
                     pass
                 else:
-                    if line=='}':
-                        pass
-                    elif len(line)>0 and line[-1]==';':
+                    if len(line)>0 and line[-1]==';':
                         line=line[0:-1]
                         split = line.split()
-                        if len(split)==2:
-                            id=split[0]
-                            label=fix_label(get_name(split[1]))
-                            self.add_node(id,label)
-                        elif len(split)==3:
+                        if len(split)==3 and split[1]=='->':
                             self.edges.append((split[0],split[1],split[2]))
+                        else:
+                            id=split[0]
+                            label=fix_label(get_name(" ".join(split[1:])))
+                            if not "std::" in label or not "_gnu" in label:    # --------------------------- block a lot
+                                print("label:",label)
+                                self.add_node(id,label)
                 line_nr+=1
 
     def add_node(self,id,label,group=""):
@@ -87,6 +87,7 @@ class Callgraph:
                 
     def write_body(self,file):
         cluster=0
+        selected_ids=set()
         for group,ids in self.groups.items():
             if not group=="":
                 file.write(f"\nsubgraph cluster_{cluster} {{\n")
@@ -95,10 +96,12 @@ class Callgraph:
             for id in ids:
                 label=self.nodes[id]
                 file.write(f'   {id} [shape=record,label="{{{label}}}"];\n')
+                selected_ids.add(id)
             if not group=="":
                 file.write("}\n")
-        for i in self.edges:
-            file.write(f"   {i[0]} {i[1]} {i[2]};\n")
+        for i0,i1,i2 in self.edges:
+            if i0 in selected_ids and i2 in selected_ids:
+                file.write(f"   {i0} {i1} {i2};\n")
         file.write("\n")
                 
     def write_footer(self,file):
