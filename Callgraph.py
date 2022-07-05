@@ -3,9 +3,8 @@ import re
 
 def main():
     label="std::more::other::name"
-    print(get_name(label))
-    namespaces=get_namespaces(label)
-    print(namespaces)
+    namespaces,name=get_namespaces_and_name(label)
+    print(namespaces,name)
     print(join_namespaces(namespaces))
     
 class Callgraph:
@@ -71,8 +70,8 @@ class Callgraph:
         for group_list,ids in old_groups:
             for id in ids:
                 label=self.nodes[id]
-                group_list=get_namespaces(label)
-                self.add_node(id,label,group_list)
+                namespaces,name=get_namespaces_and_name(label)
+                self.add_node(id,label,namespaces)
 
     def write(self,filename,label="default"):
         with open(filename, 'w') as file:
@@ -84,27 +83,33 @@ class Callgraph:
         file.write(f'digraph "{label}" {{\n')
         file.write(f'   label="Call graph: {label}";\n\n')
 
-    #def close_curly_brace(prev_group_list,group_list):
-        
+    def close_curly_brace(self,file,prev_group_list,group_list,indent):
+        i=len(prev_group_list)-1
+        while i>=0 and (i>=len(group_list) or prev_group_list[i]!=group_list[i]):
+            file.write(indent*(i+1)+"}\n")
+            i-=1
         
     def write_body(self,file):
         cluster=0
         indent="    "
         selected_ids=set()
+        group_list_index=0
+        prev_group_list=[]
         for group_list,ids in self.groups:
-            print(group_list,ids)
+            self.close_curly_brace(file,prev_group_list,group_list,indent)
+            prev_group_list=group_list[:]
             if group_list:
                 file.write("\n")
                 file.write(indent*len(group_list)+f"subgraph cluster_{cluster} {{\n")
-                file.write(indent*len(group_list)+indent+f'label = "{join_namespaces(group_list)}";\n')
+                file.write(indent*len(group_list)+indent+f'label = "{group_list[-1]}";\n')
                 cluster+=1
             for id in ids:
                 label=self.nodes[id]
-                name=get_name(label)
+                namespaces,name=get_namespaces_and_name(label)
                 file.write(indent*len(group_list)+indent+f'{id} [shape=record,label="{{{name}}}"];\n')
                 selected_ids.add(id)
-            if group_list:
-                file.write("}\n")
+        self.close_curly_brace(file,prev_group_list,[],indent)
+                
         for i0,i1,i2 in self.edges:
             if i0 in selected_ids and i2 in selected_ids:
                 file.write(f"   {i0} {i1} {i2};\n")
@@ -121,15 +126,8 @@ def get_label(line):
     result = re.search('.*label="{(.*)}".*', line)
     return result.group(1)
 
-def get_name(label):
-    ni=label.rfind('::')
-    if ni<0:
-        return label
-    else:
-        return label[ni+2:]
-
-def get_namespaces(label):
-    split=[]
+def get_namespaces_and_name(label):
+    namespaces=[]
     count0=0 # ( )
     count1=0 # < >
     count2=0 # [ ]
@@ -148,12 +146,13 @@ def get_namespaces(label):
         elif label[i]==']':
             count2-=1
         elif i>0 and label[i]==':' and label[i-1]==':' and count0==0 and count1==0 and count2==0:
-            split.append(label[prev_i:i+1])
+            namespaces.append(label[prev_i:i+1])
             prev_i=i+1
-    return split
-
-def join_namespaces(split):
-    return "".join(split)
+    name=label[prev_i:]
+    return (namespaces,label[prev_i:])
+    
+def join_namespaces(namespaces):
+    return "".join(namespaces)
 
 if __name__ == "__main__":
     main()
