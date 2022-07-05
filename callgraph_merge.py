@@ -38,7 +38,7 @@ def merge_files(filenames,output,label):
             callgraph_first.merge(callgraph)
     if not callgraph_first is None:
         callgraph_first.group()
-        print(callgraph_first)
+        #print(callgraph_first)
         callgraph_first.write(output,label)
 
 main()

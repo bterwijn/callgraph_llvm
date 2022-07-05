@@ -1,12 +1,11 @@
 import re
 
-def fix_label(label):
-    result=label.replace('<','\<')
-    return result.replace('>','\>')
-
-def get_name(label):
-    result = re.search('.*label="{(.*)}".*', label)
-    return result.group(1)
+def main():
+    label="std::more::other::name"
+    print(get_name(label))
+    namespaces=get_namespaces(label)
+    print(namespaces)
+    print(join_namespaces(namespaces))
 
 class Callgraph:
 
@@ -37,10 +36,11 @@ class Callgraph:
                             self.edges.append((split[0],split[1],split[2]))
                         else:
                             id=split[0]
-                            label=fix_label(get_name(" ".join(split[1:])))
-                            if not "std::" in label or not "_gnu" in label:    # --------------------------- block a lot
-                                print("label:",label)
-                                self.add_node(id,label)
+                            label=fix_label(get_label(" ".join(split[1:])))
+                            #if not "std::" in label or not "_gnu" in label:    # --------------------------- block a lot
+                            self.add_node(id,label)
+                            #else:
+                            #    print("ignore label:",label)
                 line_nr+=1
 
     def add_node(self,id,label,group=""):
@@ -70,9 +70,9 @@ class Callgraph:
         for group,ids in old_groups.items():
             for id in ids:
                 label=self.nodes[id]
-                splits=label.split(':')
-                group=''.join(splits[:-1])
-                label=splits[-1]
+                name=get_name(label)
+                namespaces=get_namespaces(label)
+                group=join_namespaces(namespaces)
                 self.add_node(id,label,group)
 
     def write(self,filename,label="default"):
@@ -95,7 +95,8 @@ class Callgraph:
                 cluster+=1
             for id in ids:
                 label=self.nodes[id]
-                file.write(f'   {id} [shape=record,label="{{{label}}}"];\n')
+                name=get_name(label)
+                file.write(f'   {id} [shape=record,label="{{{name}}}"];\n')
                 selected_ids.add(id)
             if not group=="":
                 file.write("}\n")
@@ -106,3 +107,35 @@ class Callgraph:
                 
     def write_footer(self,file):
         file.write("}\n")
+
+def fix_label(label):
+    result=label.replace('<','\<')
+    return result.replace('>','\>')
+
+def get_label(line):
+    result = re.search('.*label="{(.*)}".*', line)
+    return result.group(1)
+
+def get_name(label):
+    ni=label.rfind('::')
+    if ni<0:
+        return label
+    else:
+        return label[ni+2:]
+
+def get_namespaces(label):
+    split=[]
+    i=0
+    while True:
+        ni=label.find('::',i)+2
+        if ni<=1:
+            break
+        split.append(label[i:ni])
+        i=ni
+    return split
+
+def join_namespaces(split):
+    return "".join(split)
+
+if __name__ == "__main__":
+    main()
