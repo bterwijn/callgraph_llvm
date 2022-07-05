@@ -6,7 +6,7 @@ def main():
     namespaces=get_namespaces(label)
     print(namespaces)
     print(join_namespaces(namespaces))
-
+    
 class Callgraph:
 
     def __init__(self,filename):
