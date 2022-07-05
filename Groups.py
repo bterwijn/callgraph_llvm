@@ -1,6 +1,6 @@
 
 def main():
-    groups=Group();
+    groups=Groups();
 
     data=[ ( [] ,0),
            ( ["a::"] ,1),
@@ -20,6 +20,7 @@ def main():
            ( ["other::"] ,9)
           ]
     
+    data=[ ( [] ,0), ( [] ,1), ( [] ,2) ]
 
     for i in data:
         groups.add(*i)
@@ -28,8 +29,9 @@ def main():
     
     for g in groups:
         print(g)
+    
 
-class Group:
+class Groups:
 
     def __init__(self):
         self.ids=set()
@@ -42,15 +44,15 @@ class Group:
         if group_list:
             group_name=group_list[0]
             if not group_name in self.subgroups:
-                self.subgroups[group_name]=Group()
+                self.subgroups[group_name]=Groups()
             self.subgroups[group_name].add(group_list[1:],id)
         else:
             self.ids.add(id)
 
     def __iter__(self):
-        return Group_Iter(self)
+        return Groups_Iter(self)
 
-class Group_Iter:
+class Groups_Iter:
 
     def __init__(self,group):
         self.stack=[ (group, iter(group.subgroups)) ]
