@@ -83,26 +83,28 @@ class Callgraph:
     def write_header(self,file,label):
         file.write(f'digraph "{label}" {{\n')
         file.write(f'   label="Call graph: {label}";\n\n')
-                
+
+    #def close_curly_brace(prev_group_list,group_list):
+        
+        
     def write_body(self,file):
         cluster=0
+        indent="    "
         selected_ids=set()
         for group_list,ids in self.groups:
             print(group_list,ids)
-        '''
-        for group,ids in self.groups.items():
-            if not group=="":
-                file.write(f"\nsubgraph cluster_{cluster} {{\n")
-                file.write(f'   label = "{group}";\n')
+            if group_list:
+                file.write("\n")
+                file.write(indent*len(group_list)+f"subgraph cluster_{cluster} {{\n")
+                file.write(indent*len(group_list)+indent+f'label = "{join_namespaces(group_list)}";\n')
                 cluster+=1
             for id in ids:
                 label=self.nodes[id]
                 name=get_name(label)
-                file.write(f'   {id} [shape=record,label="{{{name}}}"];\n')
+                file.write(indent*len(group_list)+indent+f'{id} [shape=record,label="{{{name}}}"];\n')
                 selected_ids.add(id)
-            if not group=="":
+            if group_list:
                 file.write("}\n")
-        '''
         for i0,i1,i2 in self.edges:
             if i0 in selected_ids and i2 in selected_ids:
                 file.write(f"   {i0} {i1} {i2};\n")
