@@ -55,14 +55,13 @@ class Callgraph:
                             whitespace=line.find(' ')
                             if whitespace>0:
                                 id=line[:line.find(' ')]
-                                label=join_namespaces(namespaces)+get_label(line)
+                                label=join_namespaces(namespaces)+fix_label(get_label(line))
                                 self.add_node(id,label)
     
     def add_node(self,id,label,group_list=[]):
         self.labels[label]=id
         self.nodes[id]=label
         self.groups.add(group_list,id)
-        #print("add:",id,label,group_list)
         
     def merge(self,other):
         translate={}
@@ -118,10 +117,11 @@ class Callgraph:
                 file.write(indent*len(group_list)+indent+f'label="{group_list[-1]}";\n')
                 cluster+=1
             for id in ids:
-                label=self.nodes[id]
-                namespaces,name=get_namespaces_and_name(label)
-                file.write(indent*len(group_list)+indent+f'{id} [shape=record,label="{{{name}}}"];\n')
-                selected_ids.add(id)
+                if id in self.nodes:
+                    label=self.nodes[id]
+                    namespaces,name=get_namespaces_and_name(label)
+                    file.write(indent*len(group_list)+indent+f'{id} [shape=record,label="{{{name}}}"];\n')
+                    selected_ids.add(id)
         self.close_curly_brace(file,prev_group_list,[],indent)
         file.write("\n")
         for i0,i1 in self.edges:

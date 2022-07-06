@@ -33,7 +33,7 @@ def main():
 class Groups:
 
     def __init__(self):
-        self.ids=set()
+        self.ids=[]
         self.subgroups={}
 
     def __repr__(self):
@@ -46,7 +46,7 @@ class Groups:
                 self.subgroups[group_name]=Groups()
             self.subgroups[group_name].add(group_list[1:],id)
         else:
-            self.ids.add(id)
+            self.ids.append(id)
 
     def __iter__(self):
         return Groups_Iter(self)
