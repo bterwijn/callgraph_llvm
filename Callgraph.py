@@ -2,6 +2,7 @@ import Groups
 import re
 
 def main():
+    print(split_string("hello -> there -> world",' -> '))
     label="std::more::other::name"
     namespaces,name=get_namespaces_and_name(label)
     print(namespaces,name)
@@ -10,6 +11,7 @@ def main():
 class Callgraph:
 
     def __init__(self,filename):
+        self.arrow=' -> '
         self.nodes={}
         self.labels={}
         self.groups=Groups.Groups()
@@ -21,34 +23,46 @@ class Callgraph:
 
     def read(self,filename):
         with open(filename) as f:
-            line_nr=0
+            depth=0
+            namespaces=[]
             for line in f:
                 line=line.strip()
-                if line_nr==0:
-                    pass
-                elif line_nr==1:
-                    pass
-                else:
-                    if len(line)>0 and line[-1]==';':
-                        line=line[0:-1]
-                        split = line.split()
-                        if len(split)==3 and split[1]=='->':
-                            self.edges.append((split[0],split[1],split[2]))
+                if line:
+                    if line.find("digraph")==0 and line[-1]=='{':
+                        quote=get_quote(line)
+                        depth+=1
+                        #print("digraph:",quote)
+                    elif line.find("label")==0 and line[-1]==';':
+                        quote=get_quote(line)
+                        if depth>1:
+                            namespaces.append(quote)
+                        #print("label:",quote)
+                    elif line.find("subgraph")==0 and line[-1]=='{':
+                        depth+=1
+                        #print("subgraph")
+                    elif line[-1]=='}':
+                        depth-=1
+                        if namespaces:
+                            namespaces.pop()
+                        #print("} depth:",depth)
+                    elif line[-1]==';':
+                        line=line[:-1]
+                        #print('             :',line)
+                        splits=split_string(line,self.arrow)
+                        if len(splits)>1:
+                            self.edges.append( (splits[0],splits[1]) )
                         else:
-                            id=split[0]
-                            label=fix_label(get_label(" ".join(split[1:])))
-                            print("label:",label)
-                            #if not "std::" in label or not "_gnu" in label:    # --------------------------- block a lot
-                            self.add_node(id,label)
-                            #else:
-                            #    print("ignore label:",label)
-                line_nr+=1
-
+                            whitespace=line.find(' ')
+                            if whitespace>0:
+                                id=line[:line.find(' ')]
+                                label=join_namespaces(namespaces)+get_label(line)
+                                self.add_node(id,label)
+    
     def add_node(self,id,label,group_list=[]):
         self.labels[label]=id
         self.nodes[id]=label
         self.groups.add(group_list,id)
-        #print("add:",group_list,label)
+        #print("add:",id,label,group_list)
         
     def merge(self,other):
         translate={}
@@ -57,12 +71,12 @@ class Callgraph:
                 translate[id]=self.labels[label]
             else:
                 self.add_node(id,label)
-        for i0,i1,i2 in other.edges:
+        for i0,i1 in other.edges:
             if i0 in translate:
                 i0=translate[i0]
-            if i2 in translate:
-                i2=translate[i2]
-            self.edges.append((i0,i1,i2))
+            if i1 in translate:
+                i1=translate[i1]
+            self.edges.append((i0,i1))
             
     def group(self):
         old_groups=self.groups
@@ -101,7 +115,7 @@ class Callgraph:
             if group_list:
                 file.write("\n")
                 file.write(indent*len(group_list)+f"subgraph cluster_{cluster} {{\n")
-                file.write(indent*len(group_list)+indent+f'label = "{group_list[-1]}";\n')
+                file.write(indent*len(group_list)+indent+f'label="{group_list[-1]}";\n')
                 cluster+=1
             for id in ids:
                 label=self.nodes[id]
@@ -110,9 +124,9 @@ class Callgraph:
                 selected_ids.add(id)
         self.close_curly_brace(file,prev_group_list,[],indent)
         file.write("\n")
-        for i0,i1,i2 in self.edges:
-            if i0 in selected_ids and i2 in selected_ids:
-                file.write(indent+f"{i0} {i1} {i2};\n")
+        for i0,i1 in self.edges:
+            if i0 in selected_ids and i1 in selected_ids:
+                file.write(indent+f"{i0}{self.arrow}{i1};\n")
         file.write("\n")
                 
     def write_footer(self,file):
@@ -122,9 +136,29 @@ def fix_label(label):
     result=label.replace('<','\<')
     return result.replace('>','\>')
 
+def get_quote(line):
+    result = re.search('"(.*)"', line)
+    if result:
+        return result.group(1)
+    return result
+
 def get_label(line):
-    result = re.search('.*label="{(.*)}".*', line)
-    return result.group(1)
+    result = re.search('"{(.*)}"', line)
+    if result:
+        return result.group(1)
+    return result
+
+def split_string(line,separator):
+    splits=[]
+    prev_i=0
+    while True:
+        i=line.find(separator,prev_i)
+        if i<0:
+            break;
+        splits.append(line[prev_i:i])
+        prev_i=i+len(separator)
+    splits.append(line[prev_i:])
+    return splits
 
 def get_namespaces_and_name(label):
     namespaces=[]
