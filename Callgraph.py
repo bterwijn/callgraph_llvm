@@ -91,7 +91,7 @@ class Callgraph:
         
     def write_body(self,file):
         cluster=0
-        indent="    "
+        indent="  "
         selected_ids=set()
         group_list_index=0
         prev_group_list=[]
@@ -109,10 +109,10 @@ class Callgraph:
                 file.write(indent*len(group_list)+indent+f'{id} [shape=record,label="{{{name}}}"];\n')
                 selected_ids.add(id)
         self.close_curly_brace(file,prev_group_list,[],indent)
-                
+        file.write("\n")
         for i0,i1,i2 in self.edges:
             if i0 in selected_ids and i2 in selected_ids:
-                file.write(f"   {i0} {i1} {i2};\n")
+                file.write(indent+f"{i0} {i1} {i2};\n")
         file.write("\n")
                 
     def write_footer(self,file):
